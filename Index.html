@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="manifest" href="manifest.json">
+    <title>交替倒计时闹钟 · 10秒/5秒重复20次</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+        }
+        body {
+            background: linear-gradient(145deg, #1e2b3c 0%, #0f1a26 100%);
+            min-height: 100vh;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .card {
+            background: rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 48px;
+            padding: 40px 32px;
+            width: 460px;
+            box-shadow: 0 30px 50px rgba(0, 0, 0, 0.6), inset 0 1px 2px rgba(255,255,255,0.06);
+            color: #eef4ff;
+            transition: all 0.2s;
+        }
+        h2 {
+            font-weight: 500;
+            font-size: 1.9rem;
+            letter-spacing: 1px;
+            margin: 0 0 12px 0;
+            text-align: center;
+            color: #c1d9ff;
+            text-shadow: 0 2px 5px rgba(0,20,50,0.7);
+        }
+        .sub {
+            text-align: center;
+            font-size: 1rem;
+            color: #9bb5e0;
+            margin-bottom: 40px;
+            border-bottom: 1px dashed #3e5570;
+            padding-bottom: 16px;
+        }
+        .timer-block {
+            background: #0e1a28;
+            border-radius: 80px;
+            padding: 30px 20px;
+            margin-bottom: 32px;
+            border: 1px solid #3e5a7c;
+            box-shadow: inset 0 5px 8px rgba(0,0,0,0.7), 0 10px 20px rgba(0,10,20,0.8);
+        }
+        .big-number {
+            font-size: 6rem;
+            font-weight: 600;
+            text-align: center;
+            line-height: 1;
+            margin: 0;
+            color: #b8dcff;
+            font-feature-settings: "tnum";
+            text-shadow: 0 0 20px #3f9eff;
+            letter-spacing: 4px;
+        }
+        .unit {
+            font-size: 1.2rem;
+            opacity: 0.7;
+            margin-left: 5px;
+        }
+        .info-panel {
+            display: flex;
+            justify-content: space-between;
+            background: #1b2b3f;
+            border-radius: 60px;
+            padding: 18px 28px;
+            margin: 24px 0 18px;
+            border: 1px solid #4c6f94;
+            font-weight: 400;
+            font-size: 1.2rem;
+            backdrop-filter: blur(4px);
+        }
+        .info-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .info-label {
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            color: #95adcf;
+            letter-spacing: 1px;
+        }
+        .info-value {
+            font-size: 2rem;
+            font-weight: 500;
+            margin-top: 5px;
+            color: #ffecbb;
+        }
+        .badge {
+            background: #2f4770;
+            padding: 6px 18px;
+            border-radius: 40px;
+            font-size: 1rem;
+            width: fit-content;
+            margin: 8px auto 18px;
+            border: 1px solid #7299cc;
+            color: #e1efff;
+        }
+        .button-group {
+            display: flex;
+            gap: 16px;
+            justify-content: center;
+            margin-top: 18px;
+        }
+        button {
+            background: #2c405e;
+            border: none;
+            border-radius: 60px;
+            padding: 16px 36px;
+            font-size: 1.4rem;
+            font-weight: 500;
+            color: #eaf2ff;
+            cursor: pointer;
+            flex: 1;
+            transition: 0.15s;
+            box-shadow: 0 8px 0 #0e1a2b, 0 6px 12px black;
+            border: 1px solid #5a7aa8;
+            letter-spacing: 1px;
+        }
+        button:hover:not(:disabled) {
+            background: #3e5b84;
+            transform: translateY(-2px);
+            box-shadow: 0 10px 0 #0e1a2b, 0 10px 18px black;
+        }
+        button:active:not(:disabled) {
+            transform: translateY(5px);
+            box-shadow: 0 3px 0 #0e1a2b, 0 8px 12px black;
+        }
+        button:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+            box-shadow: 0 5px 0 #0e1a2b;
+            transform: translateY(3px);
+        }
+        #stopBtn {
+            background: #4f3f5c;
+            border-color: #a07e9e;
+        }
+        #stopBtn:hover:not(:disabled) {
+            background: #6c5380;
+        }
+        .status-text {
+            text-align: center;
+            margin-top: 25px;
+            font-size: 1.1rem;
+            color: #bcd2ff;
+        }
+        .footnote {
+            text-align: center;
+            margin-top: 24px;
+            font-size: 0.85rem;
+            color: #5f799b;
+        }
+    </style>
+</head>
+<body>
+<div class="card">
+    <h2>⏰ 交替 · 闹钟</h2>
+    <div class="sub">10秒 / 5秒  &nbsp; 重复20次</div>
+
+    <div class="timer-block">
+        <div class="big-number" id="timerDisplay">0</div>
+    </div>
+
+    <div class="info-panel">
+        <div class="info-item">
+            <span class="info-label">当前间隔</span>
+            <span class="info-value" id="intervalType">--</span>
+        </div>
+        <div class="info-item">
+            <span class="info-label">进度</span>
+            <span class="info-value" id="progress">0/20</span>
+        </div>
+    </div>
+
+    <div class="badge" id="currentCountDisplay">第 0 次</div>
+
+    <div class="button-group">
+        <button id="startBtn">▶ 开始</button>
+        <button id="stopBtn" disabled>⏹ 停止</button>
+    </div>
+
+    <div class="status-text" id="statusMessage">⏳ 等待开始</div>
+    <div class="footnote">🔔 每次结束有语音 / 弹窗提醒 · 交替20次</div>
+</div>
+
+<script>
+    (function() {
+        // ----- DOM 元素 -----
+        const timerDisplay = document.getElementById('timerDisplay');
+        const intervalTypeSpan = document.getElementById('intervalType');
+        const progressSpan = document.getElementById('progress');
+        const currentCountSpan = document.getElementById('currentCountDisplay');
+        const statusMsg = document.getElementById('statusMessage');
+        const startBtn = document.getElementById('startBtn');
+        const stopBtn = document.getElementById('stopBtn');
+
+        // ----- 核心变量 -----
+        let running = false;                // 是否正在倒计时
+        let currentIndex = 0;                // 0 ~ 19, 表示即将执行的第几次 (0代表第一次)
+        const TOTAL = 20;                    // 总闹钟次数
+
+        let timeoutId = null;                // setTimeout 句柄
+        let intervalId = null;               // 每秒更新显示句柄
+        let endTime = null;                   // 当前倒计时目标时间戳 (毫秒)
+
+        // ----- 辅助函数: 停止所有定时器 -----
+        function clearAllTimers() {
+            if (timeoutId) {
+                clearTimeout(timeoutId);
+                timeoutId = null;
+            }
+            if (intervalId) {
+                clearInterval(intervalId);
+                intervalId = null;
+            }
+        }
+
+        // ----- 更新UI (剩余秒数、间隔类型、进度) -----
+        function refreshUI() {
+            if (!running) {
+                // 非运行状态显示默认值，但保留进度文字由stopReset维护
+                return;
+            }
+
+            // 更新间隔类型显示 (基于currentIndex)
+            if (currentIndex < TOTAL) {
+                const intervalSec = (currentIndex % 2 === 0) ? 10 : 5;
+                intervalTypeSpan.textContent = intervalSec + '秒';
+            } else {
+                intervalTypeSpan.textContent = '--';
+            }
+
+            // 更新进度文字: 当前是第几次 (currentIndex+1) / TOTAL
+            progressSpan.textContent = (currentIndex + 1) + '/' + TOTAL;
+            currentCountSpan.textContent = `第 ${currentIndex + 1} 次`;
+
+            // 更新剩余秒数 (基于endTime)
+            if (endTime) {
+                const now = Date.now();
+                let remainSec = Math.max(0, Math.round((endTime - now) / 1000));
+                timerDisplay.textContent = remainSec;
+            } else {
+                timerDisplay.textContent = '0';
+            }
+        }
+
+        // ----- 每秒更新计时器 (由interval触发) -----
+        function tick() {
+            if (!running || !endTime) {
+                return;
+            }
+            const now = Date.now();
+            let remainSec = Math.max(0, Math.round((endTime - now) / 1000));
+            timerDisplay.textContent = remainSec;
+
+            // 如果剩余0但setTimeout还没触发 (极少情况)，强制归零
+            if (remainSec <= 0) {
+                timerDisplay.textContent = '0';
+            }
+        }
+
+        // ----- 提醒: 语音或alert (兼容不支持语音的浏览器) -----
+        function ringAlarm() {
+            // 尝试使用语音合成 (不会阻塞)
+            if ('speechSynthesis' in window) {
+                try {
+                    const utterance = new SpeechSynthesisUtterance('时间到');
+                    utterance.lang = 'zh-CN';
+                    utterance.rate = 1;
+                    utterance.pitch = 1;
+                    window.speechSynthesis.cancel(); // 避免重叠
+                    window.speechSynthesis.speak(utterance);
+                } catch (e) {
+                    console.warn('语音失败，使用alert', e);
+                    alert('⏰ 时间到！');
+                }
+            } else {
+                // 降级为alert
+                alert('⏰ 时间到！');
+            }
+        }
+
+        // ----- 单个倒计时结束时的处理 (由setTimeout触发) -----
+        function handleTimeout() {
+            // 清除interval (停止刷新)
+            if (intervalId) {
+                clearInterval(intervalId);
+                intervalId = null;
+            }
+
+            // 如果已经不在运行状态 (例如被手动停止) 就不再继续
+            if (!running) {
+                return;
+            }
+
+            // 发出闹钟提醒
+            ringAlarm();
+
+            // 当前这一轮结束，索引增加
+            currentIndex++;
+
+            // 检查是否完成全部20次
+            if (currentIndex >= TOTAL) {
+                // 全部完成
+                running = false;
+                clearAllTimers();           // 确保清除
+                endTime = null;
+                // 更新UI为完成状态
+                intervalTypeSpan.textContent = '--';
+                progressSpan.textContent = '20/20';
+                currentCountSpan.textContent = '第 20 次 (完成)';
+                timerDisplay.textContent = '0';
+                statusMsg.textContent = '✅ 已完成20次闹钟';
+                startBtn.disabled = false;
+                stopBtn.disabled = true;
+                return;
+            }
+
+            // 否则继续下一个倒计时
+            startNext();
+        }
+
+        // ----- 开始下一个倒计时 (根据currentIndex) -----
+        function startNext() {
+            // 清除之前的定时器 (防止残留)
+            clearAllTimers();
+
+            // 再次检查是否还在运行 (可能在clear时被stop)
+            if (!running) return;
+
+            // 边界: 如果已经完成，不应该进入这里
+            if (currentIndex >= TOTAL) {
+                running = false;
+                startBtn.disabled = false;
+                stopBtn.disabled = true;
+                statusMsg.textContent = '🏁 全部闹钟已结束';
+                return;
+            }
+
+            // 计算本次间隔: 偶数索引0,2,4... -> 10秒; 奇数索引1,3,5... -> 5秒
+            const duration = (currentIndex % 2 === 0) ? 10 : 5;
+            const now = Date.now();
+            endTime = now + duration * 1000;
+
+            // 更新界面 (间隔类型、进度、剩余秒数)
+            intervalTypeSpan.textContent = duration + '秒';
+            progressSpan.textContent = (currentIndex + 1) + '/' + TOTAL;
+            currentCountSpan.textContent = `第 ${currentIndex + 1} 次`;
+            timerDisplay.textContent = duration;
+            statusMsg.textContent = `🔊 倒计时进行中 (${duration}秒)`;
+
+            // 启动每秒刷新
+            intervalId = setInterval(() => {
+                tick();
+            }, 200); // 200ms刷新更平滑，但显示取整秒不影响
+
+            // 启动主要超时闹钟
+            timeoutId = setTimeout(() => {
+                handleTimeout();
+            }, duration * 1000);
+        }
+
+        // ----- 停止/重置 (将状态清空) -----
+        function stopReset(resetIndex = true) {
+            // 停止所有计时
+            clearAllTimers();
+            running = false;
+            endTime = null;
+
+            // 重置索引到0 (如果resetIndex为true)
+            if (resetIndex) {
+                currentIndex = 0;
+            }
+
+            // 更新UI为初始态
+            intervalTypeSpan.textContent = '--';
+            progressSpan.textContent = (resetIndex ? '0/20' : (currentIndex + 1) + '/20');
+            currentCountSpan.textContent = resetIndex ? '第 0 次' : `第 ${currentIndex + 1} 次`;
+            timerDisplay.textContent = '0';
+            statusMsg.textContent = '⏸ 已停止';
+            startBtn.disabled = false;
+            stopBtn.disabled = true;
+        }
+
+        // ----- 开始按钮逻辑 (从头开始) -----
+        function startFresh() {
+            // 如果正在运行，先完全停止并重置
+            if (running) {
+                stopReset(true);   // 重置索引为0
+            } else {
+                // 如果不在运行，但可能之前已完成，强制索引归零且界面归零
+                currentIndex = 0;
+                intervalTypeSpan.textContent = '--';
+                progressSpan.textContent = '0/20';
+                currentCountSpan.textContent = '第 0 次';
+                timerDisplay.textContent = '0';
+            }
+
+            // 清除可能残留的定时器 (再次确认)
+            clearAllTimers();
+            endTime = null;
+
+            // 设置为运行状态
+            running = true;
+            startBtn.disabled = true;
+            stopBtn.disabled = false;
+            statusMsg.textContent = '🚀 启动第一次 (10秒)';
+
+            // 开始第一次倒计时 (currentIndex 此时是0)
+            startNext();
+        }
+
+        // ----- 停止按钮: 停止闹钟，保留进度为已完成的次数(但不再继续) -----
+        function stopAction() {
+            if (!running) return;
+            // 停止所有计时，但保留 currentIndex 不变，以便用户查看进行到第几次
+            clearAllTimers();
+            running = false;
+            endTime = null;
+
+            // 更新按钮状态
+            startBtn.disabled = false;
+            stopBtn.disabled = true;
+            statusMsg.textContent = `⏸ 已暂停于第 ${currentIndex + 1} 次`;
+
+            // 界面保留当时的状态 (不再变化)
+            // 但剩余秒数变为0，间隔保留当时显示的
+            timerDisplay.textContent = '0';
+            // 注意: 间隔和进度维持当前值 (已经由之前的刷新固定)
+        }
+
+        // ----- 绑定事件 -----
+        startBtn.addEventListener('click', startFresh);
+        stopBtn.addEventListener('click', stopAction);
+
+        // 初始化显示
+        stopReset(true);  // 设置为初始状态 (索引0)
+    })();
+</script>
+</body>
+</html>
