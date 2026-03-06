@@ -195,7 +195,7 @@
     </div>
 
     <div class="status-text" id="statusMessage">⏳ 等待开始</div>
-    <div class="footnote">🔔 每次结束有语音 / 弹窗提醒 · 交替20次</div>
+    <div class="footnote">🔊 语音提醒 · 自动继续 · 无弹窗</div>
 </div>
 
 <script>
@@ -274,25 +274,51 @@
             }
         }
 
-        // ----- 提醒: 语音或alert (兼容不支持语音的浏览器) -----
+        // ----- 增强语音提醒 (自动继续，无弹窗) -----
         function ringAlarm() {
-            // 尝试使用语音合成 (不会阻塞)
+            // 显示状态提示（不弹窗）
+            statusMsg.textContent = '🔔 时间到！继续下一轮...';
+            
+            // 语音提示
             if ('speechSynthesis' in window) {
                 try {
+                    // 取消任何正在播放的语音
+                    window.speechSynthesis.cancel();
+                    
+                    // 创建语音对象
                     const utterance = new SpeechSynthesisUtterance('时间到');
                     utterance.lang = 'zh-CN';
-                    utterance.rate = 1;
-                    utterance.pitch = 1;
-                    window.speechSynthesis.cancel(); // 避免重叠
+                    utterance.rate = 0.9;      // 稍慢，更清晰
+                    utterance.pitch = 1.1;      // 稍高音调
+                    utterance.volume = 1;       // 最大音量
+                    
+                    // 尝试获取中文语音
+                    const voices = window.speechSynthesis.getVoices();
+                    const chineseVoice = voices.find(voice => 
+                        voice.lang.includes('zh') || voice.lang.includes('cmn')
+                    );
+                    if (chineseVoice) {
+                        utterance.voice = chineseVoice;
+                    }
+                    
+                    // 播放语音
                     window.speechSynthesis.speak(utterance);
+                    
                 } catch (e) {
-                    console.warn('语音失败，使用alert', e);
-                    alert('⏰ 时间到！');
+                    console.warn('语音失败', e);
+                    // 语音失败也不弹窗，只显示状态
                 }
-            } else {
-                // 降级为alert
-                alert('⏰ 时间到！');
             }
+            
+            // 0.8秒后恢复状态显示
+            setTimeout(() => {
+                if (running) {
+                    const duration = (currentIndex % 2 === 0) ? 10 : 5;
+                    statusMsg.textContent = `🔊 倒计时进行中 (${duration}秒)`;
+                }
+            }, 800);
+            
+            // 注意：这里没有alert弹窗，自动进入下一轮
         }
 
         // ----- 单个倒计时结束时的处理 (由setTimeout触发) -----
@@ -308,7 +334,7 @@
                 return;
             }
 
-            // 发出闹钟提醒
+            // 发出闹钟提醒 (无弹窗)
             ringAlarm();
 
             // 当前这一轮结束，索引增加
